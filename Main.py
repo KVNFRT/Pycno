@@ -31,14 +31,15 @@ def Volumes(V1, V2, rad, H, P1, P2, M):
 
 
 # Load Pycno Volumes
-f = open('Volumes_Pycno.txt')
+folder = '/media/fourteau/KevinF/Data/Pycno/Calibration'
+f = open(os.path.join(folder, 'Volumes_pycno.txt'))
 f.readline()
 l = f.readline()
 l = l.split()
 V1, V2 = float(l[0]), float(l[1])
 
 # # Read other parameters
-folder ='/media/fourteau/KevinF/Data/Pycno/Measurments/'
+folder ='/media/fourteau/KevinF/Data/Pycno/Measurments'
 file = '20180524.txt'
 filename = os.path.join(folder, file)
 Data = np.loadtxt(filename)
@@ -48,9 +49,6 @@ Depths = np.array([])
 
 Out_array = np.array([])
 
-fig = plt.figure()
-ax1 = fig.add_subplot(111)
-ax2 = ax1.twinx()
 
 for i in range(Data.shape[0]):
 
@@ -117,9 +115,26 @@ for i in range(Data.shape[0]):
     print('Open Porosity:', Vop, 'cm3 with uncertainty', sqrt(Uncer[0,0]))
     print('Closed Porosity:', Vcl, 'cm3 with uncertainty', sqrt(Uncer[1,1]))
     print('Total Porosity:', Vptot, 'cm3')
-    ax1.scatter([Depth], [Vop], color='black')
-    ax2.scatter([Depth], [Vcl], color='orange')
-    # ax1.scatter([Depth], [Vcl/(Vop+Vcl)], color='orange')
+
+fig = plt.figure(figsize=(10,6))
+ax1 = fig.add_subplot(111)
+ax2 = ax1.twinx()
+ax1.scatter(Out_array[:,0], Out_array[:,1], color='steelblue')
+ax2.scatter(Out_array[:,0], Out_array[:,3], color='orange')
+ax1.set_ylabel('Open Porosity')
+ax2.set_ylabel('Closed Porosity')
+ax1.set_xlabel('Depth')
+# ax1.grid(True)
 plt.show()
+
+fig = plt.figure(figsize=(10,6))
+ax1 = fig.add_subplot(111)
+ax1.scatter(Out_array[:,0], Out_array[:,3]/(Out_array[:,1]+Out_array[:,3]), color='steelblue')
+ax1.set_ylabel('Closed/Total Porosity')
+ax1.set_xlabel('Depth')
+# ax1.grid(True)
+plt.show()
+
+
 header = 'Depth\tVop\tdVop\tVcl\tdVcl'
 np.savetxt(os.path.join(folder, file.split('.')[0] + '_results.txt'), Out_array, header=header)

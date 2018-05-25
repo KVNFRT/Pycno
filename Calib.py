@@ -1,9 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from math import sqrt
+import os
+
+
+'''Script to calibrate pycno
+Need an input file with Volume, P1, P2
+'''
 
 # Load relaxation file
-filename = '/media/fourteau/KevinF/Data/Pycno/Calibration/calib_froid.txt'
+folder = '/media/fourteau/KevinF/Data/Pycno/Calibration'
+name = 'calib_froid.txt'
+filename = os.path.join(folder, name)
 Vballs, P1, P2 = np.loadtxt(filename,unpack=True) # Vcalib: Calibration balls
 Rs = P2/P1 # Compute R=P2/P1
 
@@ -46,7 +54,7 @@ plt.xlabel('Theoretical Volume')
 plt.ylabel('Estimate Volume')
 plt.show()
 
-f = open('Volumes_Pycno.txt', 'w')
+f = open(os.path.join(folder, 'Volumes_pycno.txt'), 'w')
 f.write('#V1\tV2\n')
 f.write(str(res[0,0]) +'\t'+ str(res[0,1])+'\n')
 f.write(str(Var_mat[0,0]) +'\t'+ str(Var_mat[1,1]) +'\t'+ str(Var_mat[1,0]))

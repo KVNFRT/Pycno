@@ -1,6 +1,7 @@
 import numpy as np
 from math import sqrt, pi
 import matplotlib.pyplot as plt
+import os
 
 def Volumes(V1, V2, rad, H, P1, P2, M):
     '''
@@ -30,19 +31,14 @@ def Volumes(V1, V2, rad, H, P1, P2, M):
 
 
 # Load Pycno Volumes
-f = open('Volumes_Pycno.txt')
+folder = '/media/fourteau/KevinF/Data/Pycno/Calibration'
+f = open(os.path.join(folder, 'Volumes_pycno.txt'))
 f.readline()
 l = f.readline()
 l = l.split()
 V1, V2 = float(l[0]), float(l[1])
 
-# # Read other parameters
-# rad = 4.8/2.  # Radius in cm
-# H = 4.608    # Height in cm
-# P1 = 847.91 # Pressure before relaxation
-# P2 = 751.49 # Pressure after
-# M= 70.953    # Mass in g
-
+# Input for a specific relaxation
 rad = 3.38/2.  # Radius in cm
 H = 5.06    # Height in cm
 P1 = 989.20 # Pressure before relaxation
