@@ -61,7 +61,7 @@ for i in range(Data.shape[0]):
     Depth = Data[i,0]
     P1 = Data[i, 1]
     P2 = Data[i, 2]
-    rad = Data[i, 3]/2.
+    rad = Data[i, 3]
     H = Data[i, 4]
     M = Data[i, 5]
     dr = Data[i, 6]
