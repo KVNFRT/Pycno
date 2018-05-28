@@ -5,7 +5,6 @@ import os
 
 def Volumes(V1, V2, rad, H, P1, P2, M):
     '''
-
     :param V1: Volume 1 of Pycno
     :param V2: Volume 2 of Pynco
     :param rad: Radius of firn cylinder
@@ -29,6 +28,10 @@ def Volumes(V1, V2, rad, H, P1, P2, M):
 
     return Vop, Vcl, Vtot - Vice
 
+# -------- PARAMETERS TO FILL ------
+dP = 0.1   # Uncertainty on Pressures
+dM = 0.01  # Uncertainty on Mass
+# ------------------------------------
 
 # Load Pycno Volumes
 folder = '/media/fourteau/KevinF/Data/Pycno/Calibration'
@@ -37,6 +40,9 @@ f.readline()
 l = f.readline()
 l = l.split()
 V1, V2 = float(l[0]), float(l[1])
+l = f.readline()
+l = l.split()
+dV1, dV2, covV1V2 = float(l[0]), float(l[1]), float(l[2])
 
 # # Read other parameters
 folder ='/media/fourteau/KevinF/Data/Pycno/Measurments'
@@ -55,7 +61,7 @@ for i in range(Data.shape[0]):
     Depth = Data[i,0]
     P1 = Data[i, 1]
     P2 = Data[i, 2]
-    rad = Data[i, 3]
+    rad = Data[i, 3]/2.
     H = Data[i, 4]
     M = Data[i, 5]
     dr = Data[i, 6]
@@ -92,16 +98,16 @@ for i in range(Data.shape[0]):
     #  -------------------------------------------------------------------------
 
     CoVar = np.matrix(np.zeros((7,7)))
-    CoVar[0,0] = 0.2293849482788453**2     # V1
-    CoVar[1,1] = 0.014303077508242902**2  # V2
+    CoVar[0,0] = dV1     # V1
+    CoVar[1,1] = dV2  # V2
     CoVar[2,2] = dr**2                  # Radius
     CoVar[3,3] = dh**2                   # Height
-    CoVar[4,4] = 0.1**2                    # P1
-    CoVar[5,5] = 0.1**2                    # P2
-    CoVar[6,6] = 0.01**2                  # Mass
+    CoVar[4,4] = dP**2                    # P1
+    CoVar[5,5] = dP**2                    # P2
+    CoVar[6,6] = dM**2                  # Mass
 
-    CoVar[0,1] = 0.00324571455419
-    CoVar[1,0] = 0.00324571455419
+    CoVar[0,1] = covV1V2
+    CoVar[1,0] = covV1V2
 
     # -------------------------------------------------------------------------
     # Compute uncertainties
@@ -119,8 +125,8 @@ for i in range(Data.shape[0]):
 fig = plt.figure(figsize=(10,6))
 ax1 = fig.add_subplot(111)
 ax2 = ax1.twinx()
-ax1.scatter(Out_array[:,0], Out_array[:,1], color='steelblue')
-ax2.scatter(Out_array[:,0], Out_array[:,3], color='orange')
+ax1.errorbar(Out_array[:,0], Out_array[:,1], yerr=Out_array[:,2], color='steelblue', fmt='o', ecolor='#a7cbd5')
+ax2.errorbar(Out_array[:,0], Out_array[:,3], yerr=Out_array[:,4], color='orange', fmt='o', ecolor='#ffee88')
 ax1.set_ylabel('Open Porosity')
 ax2.set_ylabel('Closed Porosity')
 ax1.set_xlabel('Depth')
