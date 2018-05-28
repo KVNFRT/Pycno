@@ -44,7 +44,7 @@ l = f.readline()
 l = l.split()
 dV1, dV2, covV1V2 = float(l[0]), float(l[1]), float(l[2])
 
-# # Read other parameters
+# # Read measurement file
 folder ='/media/fourteau/KevinF/Data/Pycno/Measurments'
 file = '20180524.txt'
 filename = os.path.join(folder, file)
@@ -99,12 +99,12 @@ for i in range(Data.shape[0]):
     #  -------------------------------------------------------------------------
 
     CoVar = np.matrix(np.zeros((7,7)))
-    CoVar[0,0] = dV1     # V1
-    CoVar[1,1] = dV2  # V2
+    CoVar[0,0] = dV1                    # V1
+    CoVar[1,1] = dV2                    # V2
     CoVar[2,2] = dr**2                  # Radius
-    CoVar[3,3] = dh**2                   # Height
-    CoVar[4,4] = dP**2                    # P1
-    CoVar[5,5] = dP**2                    # P2
+    CoVar[3,3] = dh**2                  # Height
+    CoVar[4,4] = dP**2                  # P1
+    CoVar[5,5] = dP**2                  # P2
     CoVar[6,6] = dM**2                  # Mass
 
     CoVar[0,1] = covV1V2
@@ -164,5 +164,5 @@ ax1.set_xlabel('Density (g/cm3)')
 plt.show()
 
 
-header = 'Depth\tVop\tdVop\tVcl\tdVcl\tDensity(g/cm3)'
+header = 'Depth\tVop(cm3)\tdVop(cm3)\tVcl(cm3)\tdVcl(cm3)\tDensity(g/cm3)'
 np.savetxt(os.path.join(folder, file.split('.')[0] + '_results.txt'), Out_array, header=header)
