@@ -126,6 +126,27 @@ for i in range(Data.shape[0]):
 fig = plt.figure(figsize=(10,6))
 ax1 = fig.add_subplot(111)
 ax2 = ax1.twinx()
+ax1.errorbar(Out_array[:,0], Out_array[:,1], yerr=Out_array[:,2], color='steelblue', fmt='o', ecolor='#a7cbd5')
+ax2.errorbar(Out_array[:,0], Out_array[:,3], yerr=Out_array[:,4], color='orange', fmt='o', ecolor='#ffee88')
+ax1.set_ylabel('Open Porosity (cm3)')
+ax2.set_ylabel('Closed Porosity (cm3)')
+ax1.set_xlabel('Depth (m)')
+# ax1.grid(True)
+plt.show()
+
+fig = plt.figure(figsize=(10,6))
+ax1 = fig.add_subplot(111)
+ax1.scatter(Out_array[:,0], Out_array[:,3]/(Out_array[:,1]+Out_array[:,3]), color='steelblue')
+ax1.set_ylabel('Closed/Total Porosity (cm3)')
+ax1.set_xlabel('Depthy (m)')
+# ax1.grid(True)
+plt.show()
+
+
+
+fig = plt.figure(figsize=(10,6))
+ax1 = fig.add_subplot(111)
+ax2 = ax1.twinx()
 ax1.errorbar(Out_array[:,-1], Out_array[:,1], yerr=Out_array[:,2], color='steelblue', fmt='o', ecolor='#a7cbd5')
 ax2.errorbar(Out_array[:,-1], Out_array[:,3], yerr=Out_array[:,4], color='orange', fmt='o', ecolor='#ffee88')
 ax1.set_ylabel('Open Porosity (cm3)')
