@@ -1,6 +1,7 @@
 import numpy as np
 from math import sqrt, pi
 import matplotlib.pyplot as plt
+import  matplotlib as mpl
 import os
 
 def Volumes(V1, V2, rad, H, P1, P2, M):
@@ -54,7 +55,7 @@ Vcls = np.array([])
 Depths = np.array([])
 
 Out_array = np.array([])
-
+times = np.array([])
 
 for i in range(Data.shape[0]):
 
@@ -66,6 +67,7 @@ for i in range(Data.shape[0]):
     M = Data[i, 5]
     dr = Data[i, 6]
     dh = Data[i, 7]
+    t = i
     # Compute porosity volumes
     args = [V1, V2, rad, H, P1, P2, M]
     Vop, Vcl, Vptot = Volumes(*args)
@@ -118,51 +120,70 @@ for i in range(Data.shape[0]):
     try: Out_array = np.vstack((Out_array, np.array([Depth, Vop, sqrt(Uncer[0,0]), Vcl, sqrt(Uncer[1,1]), dens ])))
     except: Out_array = np.array([Depth, Vop, sqrt(Uncer[0,0]), Vcl, sqrt(Uncer[1,1]), dens ])
 
+    times = np.append(times, t)
+
     print('--------- SAMPLE', i+1, '-------------')
     print('Open Porosity:', Vop, 'cm3 with uncertainty', sqrt(Uncer[0,0]))
     print('Closed Porosity:', Vcl, 'cm3 with uncertainty', sqrt(Uncer[1,1]))
     print('Total Porosity:', Vptot, 'cm3')
 
-fig = plt.figure(figsize=(10,6))
+
+# ----------- PLOT ------------
+
+# Plot Open and Closed porosity VS Depth
+fig = plt.figure(figsize=(14,6))
+fig.subplots_adjust(top=.95,bottom=.1,left=.05,right=1.00)
 ax1 = fig.add_subplot(111)
 ax2 = ax1.twinx()
-ax1.errorbar(Out_array[:,0], Out_array[:,1], yerr=Out_array[:,2], color='steelblue', fmt='o', ecolor='#a7cbd5')
-ax2.errorbar(Out_array[:,0], Out_array[:,3], yerr=Out_array[:,4], color='orange', fmt='o', ecolor='#ffee88')
+sc = ax1.scatter(Out_array[:,0], Out_array[:,1], s=100, c=times, marker='o', cmap='viridis', edgecolor='#050505')
+ax2.scatter(Out_array[:,0], Out_array[:,3], s=100, c=times, marker='s', cmap='viridis', edgecolor='#050505')
+cax = fig.colorbar(sc)
+cax.set_label('Time')
 ax1.set_ylabel('Open Porosity (cm3)')
 ax2.set_ylabel('Closed Porosity (cm3)')
 ax1.set_xlabel('Depth (m)')
 # ax1.grid(True)
 plt.show()
 
-fig = plt.figure(figsize=(10,6))
+# Plot Closed/Total porosity VS Depth
+fig = plt.figure(figsize=(14,6))
+fig.subplots_adjust(top=.95,bottom=.1,left=.05,right=1.00)
 ax1 = fig.add_subplot(111)
-ax1.scatter(Out_array[:,0], Out_array[:,3]/(Out_array[:,1]+Out_array[:,3]), color='steelblue')
+sc = ax1.scatter(Out_array[:,0], Out_array[:,3]/(Out_array[:,1]+Out_array[:,3]), s=100, c=times, marker='o', cmap='viridis', edgecolor='#050505')
+cax = fig.colorbar(sc)
+cax.set_label('Time')
 ax1.set_ylabel('Closed/Total Porosity (cm3)')
 ax1.set_xlabel('Depthy (m)')
 # ax1.grid(True)
 plt.show()
 
-
-
-fig = plt.figure(figsize=(10,6))
+# Plot Open and Closed porosity VS Density
+fig = plt.figure(figsize=(14,6))
+fig.subplots_adjust(top=.95,bottom=.1,left=.05,right=1.00)
 ax1 = fig.add_subplot(111)
 ax2 = ax1.twinx()
-ax1.errorbar(Out_array[:,-1], Out_array[:,1], yerr=Out_array[:,2], color='steelblue', fmt='o', ecolor='#a7cbd5')
-ax2.errorbar(Out_array[:,-1], Out_array[:,3], yerr=Out_array[:,4], color='orange', fmt='o', ecolor='#ffee88')
+sc = ax1.scatter(Out_array[:,-1], Out_array[:,1], s=100, c=Out_array[:,0], marker='o', cmap='viridis', edgecolor='#050505')
+ax2.scatter(Out_array[:,-1], Out_array[:,3], s=100, c=Out_array[:,0], marker='s', cmap='viridis', edgecolor='#050505')
+cax = fig.colorbar(sc)
+cax.set_label('Depth (m)')
 ax1.set_ylabel('Open Porosity (cm3)')
 ax2.set_ylabel('Closed Porosity (cm3)')
 ax1.set_xlabel('Density (g/cm3)')
 # ax1.grid(True)
 plt.show()
 
-fig = plt.figure(figsize=(10,6))
+# Plot Closed/Total porosity VS Density
+fig = plt.figure(figsize=(14,6))
+fig.subplots_adjust(top=.95,bottom=.1,left=.05,right=1.00)
 ax1 = fig.add_subplot(111)
-ax1.scatter(Out_array[:,-1], Out_array[:,3]/(Out_array[:,1]+Out_array[:,3]), color='steelblue')
+sc = ax1.scatter(Out_array[:,-1], Out_array[:,3]/(Out_array[:,1]+Out_array[:,3]), s=100, c=Out_array[:,0], marker='o', cmap='viridis', edgecolor='#050505')
+cax = fig.colorbar(sc)
+cax.set_label('Depth (m)')
 ax1.set_ylabel('Closed/Total Porosity (cm3)')
 ax1.set_xlabel('Density (g/cm3)')
 # ax1.grid(True)
 plt.show()
 
-
+# Save data
 header = 'Depth\tVop(cm3)\tdVop(cm3)\tVcl(cm3)\tdVcl(cm3)\tDensity(g/cm3)'
 np.savetxt(os.path.join(folder, file.split('.')[0] + '_results.txt'), Out_array, header=header)
