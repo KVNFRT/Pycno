@@ -60,18 +60,20 @@ times = np.array([])
 for i in range(Data.shape[0]):
 
     Depth = Data[i,0]
-    P1 = Data[i, 1]
-    P2 = Data[i, 2]
-    rad = Data[i, 3]
-    H = Data[i, 4]
-    M = Data[i, 5]
-    dr = Data[i, 6]
-    dh = Data[i, 7]
-    t = i
+    t = round(Data[i, 1]) + (Data[i,1] - round(Data[i,1]))/.60
+    P1 = Data[i, 2]
+    P2 = Data[i, 3]
+    rad = Data[i, 4]
+    H = Data[i, 5]
+    M = Data[i, 6]
+    dr = Data[i, 7]
+    dh = Data[i, 8]
+
     # Compute porosity volumes
     args = [V1, V2, rad, H, P1, P2, M]
     Vop, Vcl, Vptot = Volumes(*args)
-    dens = M/(pi * H * rad**2)
+    Vtot = pi * H * rad**2
+    dens = M/Vtot
 
     # -------------------------------------------------------------------------
     # Construct Jacobian matrix (matrix of derivatives)
@@ -117,8 +119,8 @@ for i in range(Data.shape[0]):
     #  -------------------------------------------------------------------------
     Uncer = np.matmul(np.matmul(Jac, CoVar), Jac.transpose())
 
-    try: Out_array = np.vstack((Out_array, np.array([Depth, Vop, sqrt(Uncer[0,0]), Vcl, sqrt(Uncer[1,1]), dens ])))
-    except: Out_array = np.array([Depth, Vop, sqrt(Uncer[0,0]), Vcl, sqrt(Uncer[1,1]), dens ])
+    try: Out_array = np.vstack((Out_array, np.array([Depth, Vop, sqrt(Uncer[0,0]), Vcl, sqrt(Uncer[1,1]), dens, Vtot ])))
+    except: Out_array = np.array([Depth, Vop, sqrt(Uncer[0,0]), Vcl, sqrt(Uncer[1,1]), dens, Vtot ])
 
     times = np.append(times, t)
 
@@ -135,12 +137,12 @@ fig = plt.figure(figsize=(14,6))
 fig.subplots_adjust(top=.95,bottom=.1,left=.05,right=1.00)
 ax1 = fig.add_subplot(111)
 ax2 = ax1.twinx()
-sc = ax1.scatter(Out_array[:,0], Out_array[:,1], s=100, c=times, marker='o', cmap='viridis', edgecolor='#050505')
-ax2.scatter(Out_array[:,0], Out_array[:,3], s=100, c=times, marker='s', cmap='viridis', edgecolor='#050505')
+sc = ax1.scatter(Out_array[:,0], Out_array[:,1]/Out_array[:,-1], s=100, c=times, marker='o', cmap='viridis', edgecolor='#050505')
+ax2.scatter(Out_array[:,0], Out_array[:,3]/Out_array[:,-1], s=100, c=times, marker='s', cmap='viridis', edgecolor='#050505')
 cax = fig.colorbar(sc)
 cax.set_label('Time')
-ax1.set_ylabel('Open Porosity (cm3)')
-ax2.set_ylabel('Closed Porosity (cm3)')
+ax1.set_ylabel('Open Porosity / Total Volume')
+ax2.set_ylabel('Closed Porosity / Total Volume')
 ax1.set_xlabel('Depth (m)')
 # ax1.grid(True)
 plt.show()
@@ -162,8 +164,8 @@ fig = plt.figure(figsize=(14,6))
 fig.subplots_adjust(top=.95,bottom=.1,left=.05,right=1.00)
 ax1 = fig.add_subplot(111)
 ax2 = ax1.twinx()
-sc = ax1.scatter(Out_array[:,-1], Out_array[:,1], s=100, c=Out_array[:,0], marker='o', cmap='viridis', edgecolor='#050505')
-ax2.scatter(Out_array[:,-1], Out_array[:,3], s=100, c=Out_array[:,0], marker='s', cmap='viridis', edgecolor='#050505')
+sc = ax1.scatter(Out_array[:,-2], Out_array[:,1]/Out_array[:,-1], s=100, c=Out_array[:,0], marker='o', cmap='viridis', edgecolor='#050505')
+ax2.scatter(Out_array[:,-2], Out_array[:,3]/Out_array[:,-1], s=100, c=Out_array[:,0], marker='s', cmap='viridis', edgecolor='#050505')
 cax = fig.colorbar(sc)
 cax.set_label('Depth (m)')
 ax1.set_ylabel('Open Porosity (cm3)')
@@ -176,7 +178,7 @@ plt.show()
 fig = plt.figure(figsize=(14,6))
 fig.subplots_adjust(top=.95,bottom=.1,left=.05,right=1.00)
 ax1 = fig.add_subplot(111)
-sc = ax1.scatter(Out_array[:,-1], Out_array[:,3]/(Out_array[:,1]+Out_array[:,3]), s=100, c=Out_array[:,0], marker='o', cmap='viridis', edgecolor='#050505')
+sc = ax1.scatter(Out_array[:,-2], Out_array[:,3]/(Out_array[:,1]+Out_array[:,3]), s=100, c=Out_array[:,0], marker='o', cmap='viridis', edgecolor='#050505')
 cax = fig.colorbar(sc)
 cax.set_label('Depth (m)')
 ax1.set_ylabel('Closed/Total Porosity (cm3)')
@@ -184,6 +186,19 @@ ax1.set_xlabel('Density (g/cm3)')
 # ax1.grid(True)
 plt.show()
 
+
+# Plot Closed/Total porosity VS Density
+fig = plt.figure(figsize=(14,6))
+fig.subplots_adjust(top=.95,bottom=.1,left=.05,right=1.00)
+ax1 = fig.add_subplot(111)
+sc = ax1.scatter((Out_array[:,1]+Out_array[:,3])/Out_array[:,-1], Out_array[:,3]/Out_array[:,-1], s=100, c=Out_array[:,0], marker='o', cmap='viridis', edgecolor='#050505')
+cax = fig.colorbar(sc)
+cax.set_label('Depth (m)')
+ax1.set_ylabel('Closed Porosity (cm3)')
+ax1.set_xlabel('Total Porosity')
+# ax1.grid(True)
+plt.show()
+
 # Save data
-header = 'Depth\tVop(cm3)\tdVop(cm3)\tVcl(cm3)\tdVcl(cm3)\tDensity(g/cm3)'
+header = 'Depth\tVop(cm3)\tdVop(cm3)\tVcl(cm3)\tdVcl(cm3)\tDensity(g/cm3)\tVtot(cm3)'
 np.savetxt(os.path.join(folder, file.split('.')[0] + '_results.txt'), Out_array, header=header)
