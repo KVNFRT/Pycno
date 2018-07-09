@@ -32,6 +32,7 @@ def Volumes(V1, V2, rad, H, P1, P2, M):
 # -------- PARAMETERS TO FILL ------
 dP = 0.1   # Uncertainty on Pressures
 dM = 0.01  # Uncertainty on Mass
+fact = .10 # Fraction of pore open with lathe
 # ------------------------------------
 
 # Load Pycno Volumes
@@ -47,7 +48,7 @@ dV1, dV2, covV1V2 = float(l[0]), float(l[1]), float(l[2])
 
 # # Read measurement file
 folder ='/media/fourteau/KevinF/Data/Pycno/Measurments'
-file = '20180524.txt'
+file = '20180529.txt'
 filename = os.path.join(folder, file)
 Data = np.loadtxt(filename)
 Vops = np.array([])
@@ -119,16 +120,30 @@ for i in range(Data.shape[0]):
     #  -------------------------------------------------------------------------
     Uncer = np.matmul(np.matmul(Jac, CoVar), Jac.transpose())
 
-    try: Out_array = np.vstack((Out_array, np.array([Depth, Vop, sqrt(Uncer[0,0]), Vcl, sqrt(Uncer[1,1]), dens, Vtot ])))
-    except: Out_array = np.array([Depth, Vop, sqrt(Uncer[0,0]), Vcl, sqrt(Uncer[1,1]), dens, Vtot ])
+    if Vcl>0:
+        Vcl_cor = Vcl / (1-fact)
+    else:
+        Vcl_cor = Vcl
+    Vop_cor = Vptot - Vcl_cor
+
+    try: Out_array = np.vstack((Out_array, np.array([Depth, Vop, Vop_cor, sqrt(Uncer[0,0]), Vcl, Vcl_cor, sqrt(Uncer[1,1]), Vptot, dens, Vtot ])))
+    except: Out_array = np.array([Depth, Vop, Vop_cor, sqrt(Uncer[0,0]), Vcl, Vcl_cor, sqrt(Uncer[1,1]), Vptot, dens, Vtot ])
 
     times = np.append(times, t)
 
     print('--------- SAMPLE', i+1, '-------------')
-    print('Open Porosity:', Vop, 'cm3 with uncertainty', sqrt(Uncer[0,0]))
-    print('Closed Porosity:', Vcl, 'cm3 with uncertainty', sqrt(Uncer[1,1]))
+    print('Open Porosity:', Vop_cor, 'cm3 with uncertainty', sqrt(Uncer[0,0]))
+    print('Closed Porosity:', Vcl_cor, 'cm3 with uncertainty', sqrt(Uncer[1,1]))
     print('Total Porosity:', Vptot, 'cm3')
 
+idep = 0
+iVop = 1
+iVopc = 2
+iVcl = 4
+iVclc = 5
+iVpt = 7
+idens = 8
+iVtot = 9
 
 # ----------- PLOT ------------
 
@@ -137,12 +152,12 @@ fig = plt.figure(figsize=(14,6))
 fig.subplots_adjust(top=.95,bottom=.1,left=.05,right=1.00)
 ax1 = fig.add_subplot(111)
 ax2 = ax1.twinx()
-sc = ax1.scatter(Out_array[:,0], Out_array[:,1]/Out_array[:,-1], s=100, c=times, marker='o', cmap='viridis', edgecolor='#050505')
-ax2.scatter(Out_array[:,0], Out_array[:,3]/Out_array[:,-1], s=100, c=times, marker='s', cmap='viridis', edgecolor='#050505')
+sc = ax1.scatter(Out_array[:,idep], Out_array[:,iVopc]/Out_array[:,iVpt], s=100, c=times, marker='o', cmap='viridis', edgecolor='#050505')
+ax2.scatter(Out_array[:,idep], Out_array[:,iVclc]/Out_array[:,iVpt], s=100, c=times, marker='s', cmap='viridis', edgecolor='#050505')
 cax = fig.colorbar(sc)
 cax.set_label('Time')
-ax1.set_ylabel('Open Porosity / Total Volume')
-ax2.set_ylabel('Closed Porosity / Total Volume')
+ax1.set_ylabel('Open Porosity / Total Porosity Volume')
+ax2.set_ylabel('Closed Porosity / Total Porosity Volume')
 ax1.set_xlabel('Depth (m)')
 # ax1.grid(True)
 plt.show()
@@ -151,7 +166,7 @@ plt.show()
 fig = plt.figure(figsize=(14,6))
 fig.subplots_adjust(top=.95,bottom=.1,left=.05,right=1.00)
 ax1 = fig.add_subplot(111)
-sc = ax1.scatter(Out_array[:,0], Out_array[:,3]/(Out_array[:,1]+Out_array[:,3]), s=100, c=times, marker='o', cmap='viridis', edgecolor='#050505')
+sc = ax1.scatter(Out_array[:,idep], Out_array[:,iVclc]/Out_array[:,iVpt], s=100, c=times, marker='o', cmap='viridis', edgecolor='#050505')
 cax = fig.colorbar(sc)
 cax.set_label('Time')
 ax1.set_ylabel('Closed/Total Porosity (cm3)')
@@ -164,8 +179,8 @@ fig = plt.figure(figsize=(14,6))
 fig.subplots_adjust(top=.95,bottom=.1,left=.05,right=1.00)
 ax1 = fig.add_subplot(111)
 ax2 = ax1.twinx()
-sc = ax1.scatter(Out_array[:,-2], Out_array[:,1]/Out_array[:,-1], s=100, c=Out_array[:,0], marker='o', cmap='viridis', edgecolor='#050505')
-ax2.scatter(Out_array[:,-2], Out_array[:,3]/Out_array[:,-1], s=100, c=Out_array[:,0], marker='s', cmap='viridis', edgecolor='#050505')
+sc = ax1.scatter(Out_array[:,idens], Out_array[:,iVopc]/Out_array[:,iVpt], s=100, c=Out_array[:,0], marker='o', cmap='viridis', edgecolor='#050505')
+ax2.scatter(Out_array[:,-2], Out_array[:,iVclc]/Out_array[:,iVpt], s=100, c=Out_array[:,0], marker='s', cmap='viridis', edgecolor='#050505')
 cax = fig.colorbar(sc)
 cax.set_label('Depth (m)')
 ax1.set_ylabel('Open Porosity (cm3)')
@@ -178,7 +193,7 @@ plt.show()
 fig = plt.figure(figsize=(14,6))
 fig.subplots_adjust(top=.95,bottom=.1,left=.05,right=1.00)
 ax1 = fig.add_subplot(111)
-sc = ax1.scatter(Out_array[:,-2], Out_array[:,3]/(Out_array[:,1]+Out_array[:,3]), s=100, c=Out_array[:,0], marker='o', cmap='viridis', edgecolor='#050505')
+sc = ax1.scatter(Out_array[:,idens], Out_array[:,iVclc]/Out_array[:,iVpt], s=100, c=Out_array[:,0], marker='o', cmap='viridis', edgecolor='#050505')
 cax = fig.colorbar(sc)
 cax.set_label('Depth (m)')
 ax1.set_ylabel('Closed/Total Porosity (cm3)')
@@ -186,19 +201,6 @@ ax1.set_xlabel('Density (g/cm3)')
 # ax1.grid(True)
 plt.show()
 
-
-# Plot Closed/Total porosity VS Density
-fig = plt.figure(figsize=(14,6))
-fig.subplots_adjust(top=.95,bottom=.1,left=.05,right=1.00)
-ax1 = fig.add_subplot(111)
-sc = ax1.scatter((Out_array[:,1]+Out_array[:,3])/Out_array[:,-1], Out_array[:,3]/Out_array[:,-1], s=100, c=Out_array[:,0], marker='o', cmap='viridis', edgecolor='#050505')
-cax = fig.colorbar(sc)
-cax.set_label('Depth (m)')
-ax1.set_ylabel('Closed Porosity (cm3)')
-ax1.set_xlabel('Total Porosity')
-# ax1.grid(True)
-plt.show()
-
 # Save data
-header = 'Depth\tVop(cm3)\tdVop(cm3)\tVcl(cm3)\tdVcl(cm3)\tDensity(g/cm3)\tVtot(cm3)'
+header = 'Depth\tVop(cm3)\tVop_cor(cm3)\tdVop(cm3)\tVcl(cm3)\tVcl_cor(cm3)\tdVcl(cm3)\tVptot(cm3)\tDensity(g/cm3)\tVtot(cm3)'
 np.savetxt(os.path.join(folder, file.split('.')[0] + '_results.txt'), Out_array, header=header)
