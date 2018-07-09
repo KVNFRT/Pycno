@@ -19,9 +19,9 @@ for f in os.listdir(wd):
     Data = np.loadtxt(filename)
     Depth = np.append(Depth, Data[:,0])
     Density = np.append(Density, Data[:,-2])
-    Vop = np.append(Vop, Data[:,1])
-    Vcl = np.append(Vcl, Data[:,3])
-    Vtot = np.append(Vtot, Data[:, -1])
+    Vop = np.append(Vop, Data[:,2])
+    Vcl = np.append(Vcl, Data[:,5])
+    Vtot = np.append(Vtot, Data[:, -3])
 
 # ----------- PLOT ------------
 
