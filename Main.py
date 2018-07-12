@@ -27,12 +27,12 @@ def Volumes(V1, V2, rad, H, P1, P2, M):
     Vcl = Vs - Vice
     Vop = Vtot - Vs
 
-    return Vop, Vcl, Vtot - Vice
+    return Vop, Vcl, Vop + Vcl
 
 # -------- PARAMETERS TO FILL ------
 dP = 0.1   # Uncertainty on Pressures
 dM = 0.01  # Uncertainty on Mass
-fact = .10 # Fraction of pore open with lathe
+fact = .15 # Fraction of pore open with lathe
 # ------------------------------------
 
 # Load Pycno Volumes
@@ -48,7 +48,7 @@ dV1, dV2, covV1V2 = float(l[0]), float(l[1]), float(l[2])
 
 # # Read measurement file
 folder ='/media/fourteau/KevinF/Data/Pycno/Measurments'
-file = '20180529.txt'
+file = '20180524.txt'
 filename = os.path.join(folder, file)
 Data = np.loadtxt(filename)
 Vops = np.array([])
@@ -121,7 +121,7 @@ for i in range(Data.shape[0]):
     Uncer = np.matmul(np.matmul(Jac, CoVar), Jac.transpose())
 
     if Vcl>0:
-        Vcl_cor = Vcl / (1-fact)
+        Vcl_cor = min(Vcl / (1-fact), Vptot) # Correct closed porosity but limit to Vptot max
     else:
         Vcl_cor = Vcl
     Vop_cor = Vptot - Vcl_cor
