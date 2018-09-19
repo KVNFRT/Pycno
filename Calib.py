@@ -9,12 +9,12 @@ Need an input file with Volume, P1, P2
 
 # Load relaxation file
 folder = '/media/fourteau/KevinF/Data/Pycno/Calibration'
-name = 'calib_froid.txt'
+name = 'calib_glace_sans_bulles.txt'
 filename = os.path.join(folder, name)
-Vballs, P1, P2 = np.loadtxt(filename,unpack=True) # Vcalib: Calibration balls
+Vballs_raw, P1, P2 = np.loadtxt(filename,unpack=True) # Vcalib: Calibration balls
 Rs = P2/P1 # Compute R=P2/P1
 
-Nrelax = len(Vballs) # Number of relaxation
+Nrelax = len(Vballs_raw) # Number of relaxation
 
 # Construct X matrix
 #  ---         ---
@@ -25,7 +25,10 @@ Nrelax = len(Vballs) # Number of relaxation
 #  | .        .   |
 #  | 1   -(R/1-R) |
 #  ---         ---
-for r in Rs:
+Vballs = np.array([])
+for i,r in enumerate(Rs):
+    if Vballs_raw[i] <50: continue
+    Vballs = np.append(Vballs, Vballs_raw[i])
     try : X = np.vstack([X,np.array([1,-r/(1-r)])]) # If X already exists stack a new row
     except: X = np.matrix(np.array([1, -r/(1-r)]))  # If not create matrix with a 1st row
 
@@ -48,7 +51,7 @@ print('Covariance =', Var_mat[1,0])
 
 # Plot theoretical VS estimate results
 plt.scatter(Vballs, np.array(Vest)[0])
-plt.plot([0,50],[0,50], ls='--', c='k')
+plt.plot([0,110],[0,110], ls='--', c='k')
 plt.xlabel('Theoretical Volume')
 plt.ylabel('Estimate Volume')
 plt.show()

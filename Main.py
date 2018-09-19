@@ -16,23 +16,22 @@ def Volumes(V1, V2, rad, H, P1, P2, M):
     :return: Volume of closed pores (Vcl), Volume of open pores (Vop)
     '''
 
-    pice = .9167 # ice density
-
     R = P2/P1
     Vs = V1 - (R/(1-R)) * V2
     Vice = M/pice
-    Vtot = pi * (rad**2) * H
+    Vcyl = pi * (rad**2) * H
 
     # Compute closed and open porosity
     Vcl = Vs - Vice
-    Vop = Vtot - Vs
+    Vop = Vcyl - Vs
 
-    return Vop, Vcl, Vop + Vcl
+    return Vop, Vcl, Vcl/(Vcl+Vop), Vop + Vcl
 
 # -------- PARAMETERS TO FILL ------
+T_mesure = -8  # degree C
+pice = 0.9165 * (1 - 1.53e-4 * T_mesure)
 dP = 0.1   # Uncertainty on Pressures
 dM = 0.01  # Uncertainty on Mass
-fact = .15 # Fraction of pore open with lathe
 # ------------------------------------
 
 # Load Pycno Volumes
@@ -72,15 +71,16 @@ for i in range(Data.shape[0]):
 
     # Compute porosity volumes
     args = [V1, V2, rad, H, P1, P2, M]
-    Vop, Vcl, Vptot = Volumes(*args)
-    Vtot = pi * H * rad**2
-    dens = M/Vtot
+    Vop, Vcl, CR, Vptot = Volumes(*args)
+    Vcyl = pi * H * rad**2
+    dens = M/Vcyl
+    rdens = dens/pice
 
     # -------------------------------------------------------------------------
     # Construct Jacobian matrix (matrix of derivatives)
     # -------------------------------------------------------------------------
 
-    Jac = np.matrix(np.zeros((2,7)))
+    Jac = np.matrix(np.zeros((3,7)))
     # Loop over 7 different inputs
     for j in range(7):
         # Construct new list of parameters with a small variation in the j-th
@@ -90,14 +90,16 @@ for i in range(Data.shape[0]):
         args_s = list(args_s)
 
         # Compute resulting closed and open porosities
-        Vo2, Vc2, dum = Volumes(*args_s)
+        Vo2, Vc2, CR2, dum = Volumes(*args_s)
         # Estimate derivative
         dero = (Vo2 - Vop)/darg
         derc = (Vc2 - Vcl)/darg
+        dercr = (CR2 - CR)/darg
 
         # Store in Jacobian matrix
         Jac[0,j] = dero
         Jac[1,j] = derc
+        Jac[2,j] = dercr
 
     # -------------------------------------------------------------------------
     # Construct Covariance matrix of input parameters
@@ -120,30 +122,24 @@ for i in range(Data.shape[0]):
     #  -------------------------------------------------------------------------
     Uncer = np.matmul(np.matmul(Jac, CoVar), Jac.transpose())
 
-    if Vcl>0:
-        Vcl_cor = min(Vcl / (1-fact), Vptot) # Correct closed porosity but limit to Vptot max
-    else:
-        Vcl_cor = Vcl
-    Vop_cor = Vptot - Vcl_cor
-
-    try: Out_array = np.vstack((Out_array, np.array([Depth, Vop, Vop_cor, sqrt(Uncer[0,0]), Vcl, Vcl_cor, sqrt(Uncer[1,1]), Vptot, dens, Vtot ])))
-    except: Out_array = np.array([Depth, Vop, Vop_cor, sqrt(Uncer[0,0]), Vcl, Vcl_cor, sqrt(Uncer[1,1]), Vptot, dens, Vtot ])
+    try: Out_array = np.vstack((Out_array, np.array([Depth, Vop, sqrt(Uncer[0,0]), Vcl, sqrt(Uncer[1,1]), CR, sqrt(Uncer[2,2]), Vptot, Vcyl, dens, rdens ])))
+    except: Out_array = np.array([Depth, Vop, sqrt(Uncer[0,0]), Vcl, sqrt(Uncer[1,1]), CR, sqrt(Uncer[2,2]), Vptot, Vcyl, dens, rdens])
 
     times = np.append(times, t)
 
     print('--------- SAMPLE', i+1, '-------------')
-    print('Open Porosity:', Vop_cor, 'cm3 with uncertainty', sqrt(Uncer[0,0]))
-    print('Closed Porosity:', Vcl_cor, 'cm3 with uncertainty', sqrt(Uncer[1,1]))
+    print('Open Porosity:', Vop, 'cm3 with uncertainty', sqrt(Uncer[0,0]))
+    print('Closed Porosity:', Vcl, 'cm3 with uncertainty', sqrt(Uncer[1,1]))
+    print('Closed Porosity Ratio:', CR, 'with uncertainty', sqrt(Uncer[2,2]))
     print('Total Porosity:', Vptot, 'cm3')
 
 idep = 0
 iVop = 1
-iVopc = 2
-iVcl = 4
-iVclc = 5
-iVpt = 7
+iVcl = 3
+iVpt = 5
+idens = 7
 idens = 8
-iVtot = 9
+iVtot = 6
 
 # ----------- PLOT ------------
 
@@ -152,8 +148,8 @@ fig = plt.figure(figsize=(14,6))
 fig.subplots_adjust(top=.95,bottom=.1,left=.05,right=1.00)
 ax1 = fig.add_subplot(111)
 ax2 = ax1.twinx()
-sc = ax1.scatter(Out_array[:,idep], Out_array[:,iVopc]/Out_array[:,iVpt], s=100, c=times, marker='o', cmap='viridis', edgecolor='#050505')
-ax2.scatter(Out_array[:,idep], Out_array[:,iVclc]/Out_array[:,iVpt], s=100, c=times, marker='s', cmap='viridis', edgecolor='#050505')
+sc = ax1.scatter(Out_array[:,idep], Out_array[:,iVop]/Out_array[:,iVpt], s=100, c=times, marker='o', cmap='viridis', edgecolor='#050505')
+ax2.scatter(Out_array[:,idep], Out_array[:,iVcl]/Out_array[:,iVpt], s=100, c=times, marker='s', cmap='viridis', edgecolor='#050505')
 cax = fig.colorbar(sc)
 cax.set_label('Time')
 ax1.set_ylabel('Open Porosity / Total Porosity Volume')
@@ -166,7 +162,7 @@ plt.show()
 fig = plt.figure(figsize=(14,6))
 fig.subplots_adjust(top=.95,bottom=.1,left=.05,right=1.00)
 ax1 = fig.add_subplot(111)
-sc = ax1.scatter(Out_array[:,idep], Out_array[:,iVclc]/Out_array[:,iVpt], s=100, c=times, marker='o', cmap='viridis', edgecolor='#050505')
+sc = ax1.scatter(Out_array[:,idep], Out_array[:,iVcl]/Out_array[:,iVpt], s=100, c=times, marker='o', cmap='viridis', edgecolor='#050505')
 cax = fig.colorbar(sc)
 cax.set_label('Time')
 ax1.set_ylabel('Closed/Total Porosity (cm3)')
@@ -179,8 +175,8 @@ fig = plt.figure(figsize=(14,6))
 fig.subplots_adjust(top=.95,bottom=.1,left=.05,right=1.00)
 ax1 = fig.add_subplot(111)
 ax2 = ax1.twinx()
-sc = ax1.scatter(Out_array[:,idens], Out_array[:,iVopc]/Out_array[:,iVpt], s=100, c=Out_array[:,0], marker='o', cmap='viridis', edgecolor='#050505')
-ax2.scatter(Out_array[:,-2], Out_array[:,iVclc]/Out_array[:,iVpt], s=100, c=Out_array[:,0], marker='s', cmap='viridis', edgecolor='#050505')
+sc = ax1.scatter(Out_array[:,idens], Out_array[:,iVop]/Out_array[:,iVpt], s=100, c=Out_array[:,0], marker='o', cmap='viridis', edgecolor='#050505')
+ax2.scatter(Out_array[:,-2], Out_array[:,iVcl]/Out_array[:,iVpt], s=100, c=Out_array[:,0], marker='s', cmap='viridis', edgecolor='#050505')
 cax = fig.colorbar(sc)
 cax.set_label('Depth (m)')
 ax1.set_ylabel('Open Porosity (cm3)')
@@ -193,7 +189,7 @@ plt.show()
 fig = plt.figure(figsize=(14,6))
 fig.subplots_adjust(top=.95,bottom=.1,left=.05,right=1.00)
 ax1 = fig.add_subplot(111)
-sc = ax1.scatter(Out_array[:,idens], Out_array[:,iVclc]/Out_array[:,iVpt], s=100, c=Out_array[:,0], marker='o', cmap='viridis', edgecolor='#050505')
+sc = ax1.scatter(Out_array[:,idens], Out_array[:,iVcl]/Out_array[:,iVpt], s=100, c=Out_array[:,0], marker='o', cmap='viridis', edgecolor='#050505')
 cax = fig.colorbar(sc)
 cax.set_label('Depth (m)')
 ax1.set_ylabel('Closed/Total Porosity (cm3)')
@@ -202,5 +198,5 @@ ax1.set_xlabel('Density (g/cm3)')
 plt.show()
 
 # Save data
-header = 'Depth\tVop(cm3)\tVop_cor(cm3)\tdVop(cm3)\tVcl(cm3)\tVcl_cor(cm3)\tdVcl(cm3)\tVptot(cm3)\tDensity(g/cm3)\tVtot(cm3)'
+header = 'Depth\tVop(cm3)\tdVop(cm3)\tVcl(cm3)\tdVcl(cm3)\tCR\tdCR\tVptot(cm3)\tVcyl(cm3)\tDensity(g/cm3)\tRelative_Density'
 np.savetxt(os.path.join(folder, file.split('.')[0] + '_results.txt'), Out_array, header=header)
